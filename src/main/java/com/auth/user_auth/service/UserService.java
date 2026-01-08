@@ -22,15 +22,13 @@ public class UserService implements UserDetailsService {
     private final OtpRepository otpRepository;
     private final EmailService emailService;
     private final OtpUtil otpUtil;
-    private final SmsService smsService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, OtpRepository otpRepository, EmailService emailService, OtpUtil otpUtil, SmsService smsService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, OtpRepository otpRepository, EmailService emailService, OtpUtil otpUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.otpRepository = otpRepository;
         this.emailService = emailService;
         this.otpUtil = otpUtil;
-        this.smsService = smsService;
     }
 
 
@@ -69,7 +67,7 @@ public class UserService implements UserDetailsService {
         otpVerification.setEmail(user.getEmail());
         otpVerification.setMobile(user.getMobile());
         otpVerification.setCreatedAt(LocalDateTime.now());
-        otpVerification.setOtp(otp);
+        otpVerification.setOtp(passwordEncoder.encode(otp));
         otpVerification.setExpiredAt(LocalDateTime.now().plusMinutes(5));
         otpVerification.setVerified(false);
 
@@ -78,7 +76,6 @@ public class UserService implements UserDetailsService {
         otpRepository.save(otpVerification);
 
         emailService.sendOtp(user.getEmail(), otp);
-        smsService.sendOtp(user.getMobile(), otp);
 
     }
 
