@@ -1,46 +1,105 @@
 package com.auth.user_auth.service;
 
+import com.auth.user_auth.entity.OtpVerification;
 import com.auth.user_auth.entity.User;
+import com.auth.user_auth.repository.OtpRepository;
 import com.auth.user_auth.repository.UserRepository;
+import com.auth.user_auth.utility.OtpUtil;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 
 @Service
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpRepository otpRepository;
+    private final EmailService emailService;
+    private final OtpUtil otpUtil;
+    private final SmsService smsService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, OtpRepository otpRepository, EmailService emailService, OtpUtil otpUtil, SmsService smsService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.otpRepository = otpRepository;
+        this.emailService = emailService;
+        this.otpUtil = otpUtil;
+        this.smsService = smsService;
     }
 
+
     // User Register
-    public User register (User user)
+    @Transactional
+    public void register (User user)
     {
+
+        // Check username should not exist
         if (userRepository.findByUsername(user.getUsername()).isPresent())
         {
             throw new RuntimeException("User already exists!!");
         }
 
+        // Check email should not exist
         if (userRepository.findByEmail(user.getEmail()).isPresent())
         {
             throw new RuntimeException("This email is already register");
         }
 
+        // Save the user with enabled = false
         user.setFirstName(user.getFirstName());
         user.setLastName(user.getLastName());
         user.setUsername(user.getUsername());
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole("ROLE_USER");
+        user.setEnabled(false);
+
+        // Save the user finally
+        User savedUser = userRepository.save(user);
+
+        // Generate OTP
+        String otp = otpUtil.generateOtp();
+
+        OtpVerification otpVerification = new OtpVerification();
+        otpVerification.setEmail(user.getEmail());
+        otpVerification.setMobile(user.getMobile());
+        otpVerification.setCreatedAt(LocalDateTime.now());
+        otpVerification.setOtp(otp);
+        otpVerification.setExpiredAt(LocalDateTime.now().plusMinutes(5));
+        otpVerification.setVerified(false);
+
+        otpVerification.setUser(savedUser);
+
+        otpRepository.save(otpVerification);
+
+        emailService.sendOtp(user.getEmail(), otp);
+        smsService.sendOtp(user.getMobile(), otp);
+
+    }
+
+    public void verifyOtp(String email, String otp) {
+
+        OtpVerification otpEntity = otpRepository
+                .findByEmailAndOtp(email, otp)
+                .orElseThrow(() -> new RuntimeException("Invalid OTP"));
+
+        if (otpEntity.getExpiredAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP expired");
+        }
+
+        otpEntity.setVerified(true);
+        otpRepository.save(otpEntity);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         user.setEnabled(true);
-
-        return userRepository.save(user);
-
+        userRepository.save(user);
     }
 
     // Spring checks that either username is in the database or not

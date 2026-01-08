@@ -20,7 +20,16 @@ public class UserController {
     public ResponseEntity<?> userRegistration (@RequestBody User user)
     {
         userService.register(user);
-        return ResponseEntity.ok("User registered successfully!!");
+        return ResponseEntity.ok("OTP has been sent to your email, pls check and verify for registration!!");
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(
+            @RequestParam String email,
+            @RequestParam String otp) {
+
+        userService.verifyOtp(email, otp);
+        return ResponseEntity.ok("User registered successfully");
     }
 
     // User Login
