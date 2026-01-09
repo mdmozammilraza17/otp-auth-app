@@ -81,9 +81,13 @@ public class UserService implements UserDetailsService {
 
     public void verifyOtp(String email, String otp) {
 
-        OtpVerification otpEntity = otpRepository
-                .findByEmailAndOtp(email, otp)
-                .orElseThrow(() -> new RuntimeException("Invalid OTP"));
+        OtpVerification otpEntity =
+                otpRepository.findTopByEmailAndVerifiedFalseOrderByCreatedAtDesc(email)
+                        .orElseThrow(() -> new RuntimeException("OTP not found"));
+
+        if (!passwordEncoder.matches(otp, otpEntity.getOtp())) {
+            throw new RuntimeException("Invalid OTP");
+        }
 
         if (otpEntity.getExpiredAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("OTP expired");
