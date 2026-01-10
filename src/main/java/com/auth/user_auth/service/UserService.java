@@ -2,6 +2,7 @@ package com.auth.user_auth.service;
 
 import com.auth.user_auth.entity.OtpVerification;
 import com.auth.user_auth.entity.User;
+import com.auth.user_auth.exception.UserAlreadyExistsException;
 import com.auth.user_auth.repository.OtpRepository;
 import com.auth.user_auth.repository.UserRepository;
 import com.auth.user_auth.utility.OtpUtil;
@@ -40,7 +41,7 @@ public class UserService implements UserDetailsService {
         // Check username should not exist
         if (userRepository.findByUsername(user.getUsername()).isPresent())
         {
-            throw new RuntimeException("User already exists!!");
+            throw new UserAlreadyExistsException("User already exists!!");
         }
 
         // Check email should not exist

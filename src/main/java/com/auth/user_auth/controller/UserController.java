@@ -23,20 +23,20 @@ public class UserController {
         return ResponseEntity.ok("OTP has been sent to your email, pls check and verify for registration!!");
     }
 
+    // User Verification using OTP
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(
             @RequestParam String email,
             @RequestParam String otp) {
 
         userService.verifyOtp(email, otp);
-        return ResponseEntity.ok("User registered successfully");
+        return ResponseEntity.ok("User registered successfully!!");
     }
 
-    // User Login
 
-    // Change Password (User Logged-in)
+    // Change Password with old password
 
-    // Forget Password
+    // Forgot Password
 
     // Role Based Authorization
 }
