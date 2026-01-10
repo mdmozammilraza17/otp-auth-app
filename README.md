@@ -27,5 +27,31 @@
 
 ![Verification](images/User_Verification_with_OTP.png)
 
+### Now you can Login
+
+```json
+@Bean
+    public SecurityFilterChain filterChain (HttpSecurity http)
+    {
+        http.csrf(csrf -> csrf.disable())
+                .formLogin(Customizer.withDefaults())
+                .authorizeHttpRequests(auth ->
+                        auth.requestMatchers("/auth/register", "/public",
+                                        "/auth/verify-otp").permitAll()
+                                .anyRequest().authenticated());
+
+        return http.build();
+    }
+```
+Expect /auth/register", "/public","/auth/verify-otp" all endpoints are Authenticated.
+
+![LoginUser](images/Login_User.png)
+
+We will write the correct credential for the specific user and login.
+
+![User Logged In](images/User_Logged_In.png)
+
+Now you can see that user can successful logged in.
+
 ---
 Created by **Mozammil Raza**
